@@ -10,13 +10,11 @@ agent:
 blocks:
   - name: Code signing
     task:
-      secrets:
-        - name: gpg-keys
       jobs:
         - name: sign
           commands:
-            - gpg --import /home/semaphore/public.key
-            - gpg --import /home/semaphore/private.key
+            - gpg --import 1-signing/public.key
+            - gpg --import 1-signing/private.key
             - gpg --output 1-signing/artifact.txt.sig --detach-sign 1-signing/artifact.txt
             - gpg --verify 1-signing/artifact.txt.sig 1-signing/artifact.txt
             - artifact push workflow 1-signing/artifact.txt.sig
