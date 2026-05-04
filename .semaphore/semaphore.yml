@@ -4,6 +4,9 @@ agent:
   machine:
     type: e1-standard-2
     os_image: ubuntu2004
+  containers:
+    - name: main
+      image: registry.semaphoreci.com/python:3.12.1
 
 blocks:
   - name: Code signing
@@ -13,65 +16,49 @@ blocks:
       jobs:
         - name: sign
           commands:
-            - gpg --import /root/public.key
-            - gpg --import /root/private.key
+            - gpg --import /home/semaphore/public.key
+            - gpg --import /home/semaphore/private.key
             - gpg --output 1-signing/artifact.txt.sig --detach-sign 1-signing/artifact.txt
             - gpg --verify 1-signing/artifact.txt.sig 1-signing/artifact.txt
             - artifact push workflow 1-signing/artifact.txt.sig
 
   - name: SBOM
     task:
-      prologue:
-        commands:
-          - cd 2-sbom
-          - python -m venv venv
-          - source venv/bin/activate
       jobs:
         - name: Cyclonedx
           commands:
+            - cd 2-sbom
             - pip install cyclonedx-bom
             - cyclonedx-py requirements -o bom.json
             - artifact push workflow 2-sbom/bom.json
 
   - name: Audit dependencies
     task:
-      prologue:
-        commands:
-          - cd 3-dependency-scanning
-          - python -m venv venv
-          - source venv/bin/activate
       jobs:
         - name: pip audit
           commands:
+            - cd 3-dependency-scanning
             - pip install pip-audit
             - pip-audit -r requirements.txt || true
 
   - name: SAST Scan
     task:
-      prologue:
-        commands:
-          - cd 4-sast
-          - python -m venv venv
-          - source venv/bin/activate
       jobs:
         - name: Bandit
           commands:
+            - cd 4-sast
             - pip install bandit
             - bandit -r vulnerable_script.py || true
 
   - name: DAST Scan
     task:
-      prologue:
-        commands:
-          - cd 5-dast
-          - python -m venv venv
-          - source venv/bin/activate
-          - pip install -r requirements.txt
-          - pip install wapiti3
       jobs:
         - name: wapiti
           commands:
+            - cd 5-dast
+            - pip install -r requirements.txt
+            - pip install wapiti3
             - gunicorn -b 0.0.0.0:4000 app:app --daemon
             - sleep 2
             - wapiti -u http://localhost:4000 -f html
-            - artifact push workflow /root/.wapiti/generated_report
+            - artifact push workflow /home/semaphore/.wapiti/generated_report
