@@ -2,12 +2,11 @@ version: v1.0
 name: Continuous Integration Pipeline
 agent:
   machine:
-    type: e1-standard-2
-    os_image: ubuntu2004
+    type: f1-standard-2
+    os_image: ubuntu2404
   containers:
     - name: main
-      image: registry.semaphoreci.com/python:3.12.1
-
+      image: 'registry.semaphoreci.com/python:3.12.1'
 blocks:
   - name: Code signing
     task:
@@ -21,7 +20,6 @@ blocks:
             - gpg --output 1-signing/artifact.txt.sig --detach-sign 1-signing/artifact.txt
             - gpg --verify 1-signing/artifact.txt.sig 1-signing/artifact.txt
             - artifact push workflow 1-signing/artifact.txt.sig
-
   - name: SBOM
     task:
       jobs:
@@ -31,7 +29,6 @@ blocks:
             - pip install cyclonedx-bom
             - cyclonedx-py requirements -o bom.json
             - artifact push workflow 2-sbom/bom.json
-
   - name: Audit dependencies
     task:
       jobs:
@@ -40,7 +37,6 @@ blocks:
             - cd 3-dependency-scanning
             - pip install pip-audit
             - pip-audit -r requirements.txt || true
-
   - name: SAST Scan
     task:
       jobs:
@@ -49,7 +45,6 @@ blocks:
             - cd 4-sast
             - pip install bandit
             - bandit -r vulnerable_script.py || true
-
   - name: DAST Scan
     task:
       jobs:
@@ -58,7 +53,7 @@ blocks:
             - cd 5-dast
             - pip install -r requirements.txt
             - pip install wapiti3
-            - gunicorn -b 0.0.0.0:4000 app:app --daemon
+            - 'gunicorn -b 0.0.0.0:4000 app:app --daemon'
             - sleep 2
-            - wapiti -u http://localhost:4000 -f html
+            - 'wapiti -u http://localhost:4000 -f html'
             - artifact push workflow /home/semaphore/.wapiti/generated_report
