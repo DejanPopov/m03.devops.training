@@ -59,4 +59,5 @@ blocks:
             - 'gunicorn -b 0.0.0.0:4000 app:app --daemon'
             - sleep 2
             - 'wapiti -u http://localhost:4000 -f html'
-            - artifact push workflow /home/semaphore/.wapiti/generated_report
+            - find $HOME/.wapiti -type d
+            - artifact push workflow $HOME/.wapiti/generated_report
